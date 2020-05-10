@@ -4,7 +4,7 @@
 
 Some implementations of knowledge tracing with pytorch
 
-1. DKT, paper: []: <https://arxiv.org/abs/1506.05908>, reference: []: <https://github.com/chsong513/DeepKnowledgeTracing-DKT-Pytorch>
+1. DKT, paper: <https://arxiv.org/abs/1506.05908>, reference: <https://github.com/chsong513/DeepKnowledgeTracing-DKT-Pytorch>
 
 ## Usage
 
