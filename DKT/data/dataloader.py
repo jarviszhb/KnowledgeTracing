@@ -2,15 +2,15 @@
 # @Author: jarvis.zhang
 # @Date:   2020-05-08 16:21:21
 # @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 00:02:25
+# @Last Modified time: 2020-05-10 11:47:28
 import torch
 import torch.utils.data as Data
-from data.readdata import DataReader
+from DKT.data.readdata import DataReader
 
 
 def getDataLoader(batch_size, num_of_questions, max_step):
-    handle = DataReader('dataset/assistments/builder_train.csv',
-                        'dataset/assistments/builder_test.csv', max_step,
+    handle = DataReader('DKT/dataset/assistments/builder_train.csv',
+                        'DKT/dataset/assistments/builder_test.csv', max_step,
                         num_of_questions)
     dtrain = torch.tensor(handle.getTrainData().astype(float).tolist(),
                           dtype=torch.float32)

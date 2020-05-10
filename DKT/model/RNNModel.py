@@ -2,10 +2,9 @@
 # @Author: jarvis.zhang
 # @Date:   2020-05-10 00:29:34
 # @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 00:30:14
+# @Last Modified time: 2020-05-10 11:45:30
 import torch
 import torch.nn as nn
-# from torch.autograd import Variable
 
 
 class RNNModel(nn.Module):

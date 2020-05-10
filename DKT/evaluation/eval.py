@@ -2,11 +2,15 @@
 # @Author: jarvis.zhang
 # @Date:   2020-05-09 13:42:11
 # @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 00:28:17
+# @Last Modified time: 2020-05-10 12:06:39
 import tqdm
 import torch
+import logging
+
 import torch.nn as nn
 from sklearn import metrics
+
+logger = logging.getLogger('main.eval')
 
 
 def performance(ground_truth, prediction):
@@ -21,7 +25,8 @@ def performance(ground_truth, prediction):
     precision = metrics.precision_score(
         ground_truth.detach().numpy(),
         torch.round(prediction).detach().numpy())
-
+    logger.info('auc: ' + str(auc) + ' f1: ' + str(f1) + ' recall: ' +
+                str(recall) + ' precision: ' + str(precision))
     print('auc: ' + str(auc) + ' f1: ' + str(f1) + ' recall: ' + str(recall) +
           ' precision: ' + str(precision))
 
@@ -47,9 +52,6 @@ class lossFunc(nn.Module):
             a = (((batch[student][:, 0:self.num_of_questions] -
                    batch[student][:, self.num_of_questions:]).sum(1) + 1) //
                  2)[1:]
-            # for i in range(len(p)):
-            #     if p[i] > 0:
-            #         loss = loss - (a[i]*torch.log(p[i]) + (1-a[i])*torch.log(1-p[i]))
             for i in range(len(p) - 1, -1, -1):
                 if p[i] > 0:
                     p = p[:i + 1]
@@ -61,8 +63,10 @@ class lossFunc(nn.Module):
         return loss, prediction, ground_truth
 
 
-def train_epoch(model, trainLoader, optimizer, loss_func):
+def train_epoch(model, trainLoader, optimizer, loss_func, device):
+    model.to(device)
     for batch in tqdm.tqdm(trainLoader, desc='Training:    ', mininterval=2):
+        batch.to(device)
         pred = model(batch)
         loss, prediction, ground_truth = loss_func(pred, batch)
         optimizer.zero_grad()
@@ -71,22 +75,14 @@ def train_epoch(model, trainLoader, optimizer, loss_func):
     return model, optimizer
 
 
-def test_epoch(model, testLoader, loss_func):
+def test_epoch(model, testLoader, loss_func, device):
+    model.to(device)
     ground_truth = torch.Tensor([])
     prediction = torch.Tensor([])
     for batch in tqdm.tqdm(testLoader, desc='Testing:     ', mininterval=2):
+        batch.to(device)
         pred = model(batch)
         loss, p, a = loss_func(pred, batch)
         prediction = torch.cat([prediction, p])
         ground_truth = torch.cat([ground_truth, a])
-        # for student in range(pred.shape[0]):
-        #     delta = batch[student][:, 0:self.num_of_questions] + batch[student][:,self.num_of_questions:]
-        #     temp = pred[student][:C.MAX_STEP - 1].mm(delta[1:].t())
-        #     index = torch.LongTensor([[i for i in range(C.MAX_STEP - 1)]])
-        #     p = temp.gather(0, index)[0]
-        #     a = (((batch[student][:, 0:self.num_of_questions] - batch[student][:, self.num_of_questions:]).sum(1) + 1)//2)[1:]
-        #     for i in range(len(p)):
-        #         if p[i] > 0:
-        #             prediction = torch.cat([prediction,p[i:i+1]])
-        #             ground_truth = torch.cat([ground_truth, a[i:i+1]])
     performance(ground_truth, prediction)

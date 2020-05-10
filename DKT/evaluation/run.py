@@ -2,7 +2,7 @@
 # @Author: jarvis.zhang
 # @Date:   2020-05-09 21:50:46
 # @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 00:19:10
+# @Last Modified time: 2020-05-10 12:07:18
 """
 Usage:
     run.py [options]
@@ -17,18 +17,22 @@ Options:
     --cuda=<int>                        use GPU id [default: 0]
     --hidden=<int>                      dimention of hidden state [default: 10]
     --layers=<int>                      layers of rnn [default: 1]
+    --gpu
 """
 
+import os
 import random
+import logging
 import torch
 
 import torch.optim as optim
 import numpy as np
 
+from datetime import datetime
 from docopt import docopt
-from model.RNNModel import RNNModel
-from data.dataloader import getDataLoader
-from evaluation import eval
+from DKT.model.RNNModel import RNNModel
+from DKT.data.dataloader import getDataLoader
+from DKT.evaluation import eval
 
 
 def setup_seed(seed=0):
@@ -41,6 +45,18 @@ def setup_seed(seed=0):
 
 
 def main():
+
+    logger = logging.getLogger('main')
+    logger.setLevel(level=logging.DEBUG)
+    date = datetime.now()
+    handler = logging.FileHandler(
+        f'DKT/.log/{date.year}_{date.month}_{date.day}_result.log')
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     args = docopt(__doc__)
     step = int(args['--step'])
     questions = int(args['--questions'])
@@ -48,13 +64,21 @@ def main():
     bs = int(args['--bs'])
     seed = int(args['--seed'])
     epochs = int(args['--epochs'])
-    # cuda = int(args['--cuda'])
+    cuda = int(args['--cuda'])
     hidden = int(args['--hidden'])
     layers = int(args['--layers'])
 
-    setup_seed(seed)
-    trainLoader, testLoade = getDataLoader(bs, questions, step)
+    logger.info(list(args.items()))
 
+    setup_seed(seed)
+
+    if args['--gpu']:
+        os.environ["CUDA_VISIBLE_DEVICES"] = cuda
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
+
+    trainLoader, testLoade = getDataLoader(bs, questions, step)
     rnn = RNNModel(questions * 2, hidden, layers, questions)
     optimizer = optim.Adam(rnn.parameters(), lr=lr)
     loss_func = eval.lossFunc(questions, step)
@@ -62,8 +86,9 @@ def main():
     for epoch in range(epochs):
         print('epoch: ' + str(epoch))
         rnn, optimizer = eval.train_epoch(rnn, trainLoader, optimizer,
-                                          loss_func)
-        eval.test_epoch(rnn, testLoade, loss_func)
+                                          loss_func, device)
+        logger.info(f'epoch {epoch}')
+        eval.test_epoch(rnn, testLoade, loss_func, device)
 
 
 if __name__ == '__main__':
