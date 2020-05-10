@@ -2,13 +2,13 @@
 # @Author: jarvis.zhang
 # @Date:   2020-05-10 00:29:34
 # @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 11:45:30
+# @Last Modified time: 2020-05-10 13:14:50
 import torch
 import torch.nn as nn
 
 
 class RNNModel(nn.Module):
-    def __init__(self, input_dim, hidden_dim, layer_dim, output_dim):
+    def __init__(self, input_dim, hidden_dim, layer_dim, output_dim, device):
         super(RNNModel, self).__init__()
         self.hidden_dim = hidden_dim
         self.layer_dim = layer_dim
@@ -20,9 +20,10 @@ class RNNModel(nn.Module):
                           nonlinearity='tanh')
         self.fc = nn.Linear(self.hidden_dim, self.output_dim)
         self.sig = nn.Sigmoid()
+        self.device = device
 
     def forward(self, x):
-        h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim)
+        h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim, device=self.device)
         out, hn = self.rnn(x, h0)
         res = self.sig(self.fc(out))
         return res

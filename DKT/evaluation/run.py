@@ -2,7 +2,7 @@
 # @Author: jarvis.zhang
 # @Date:   2020-05-09 21:50:46
 # @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 12:07:18
+# @Last Modified time: 2020-05-10 13:20:09
 """
 Usage:
     run.py [options]
@@ -17,7 +17,6 @@ Options:
     --cuda=<int>                        use GPU id [default: 0]
     --hidden=<int>                      dimention of hidden state [default: 10]
     --layers=<int>                      layers of rnn [default: 1]
-    --gpu
 """
 
 import os
@@ -64,7 +63,7 @@ def main():
     bs = int(args['--bs'])
     seed = int(args['--seed'])
     epochs = int(args['--epochs'])
-    cuda = int(args['--cuda'])
+    cuda = args['--cuda']
     hidden = int(args['--hidden'])
     layers = int(args['--layers'])
 
@@ -72,16 +71,16 @@ def main():
 
     setup_seed(seed)
 
-    if args['--gpu']:
+    if torch.cuda.is_available():
         os.environ["CUDA_VISIBLE_DEVICES"] = cuda
         device = torch.device('cuda')
     else:
         device = torch.device('cpu')
 
     trainLoader, testLoade = getDataLoader(bs, questions, step)
-    rnn = RNNModel(questions * 2, hidden, layers, questions)
+    rnn = RNNModel(questions * 2, hidden, layers, questions, device)
     optimizer = optim.Adam(rnn.parameters(), lr=lr)
-    loss_func = eval.lossFunc(questions, step)
+    loss_func = eval.lossFunc(questions, step, device)
 
     for epoch in range(epochs):
         print('epoch: ' + str(epoch))

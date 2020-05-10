@@ -2,7 +2,7 @@
 # @Author: jarvis.zhang
 # @Date:   2020-05-09 13:42:11
 # @Last Modified by:   jarvis.zhang
-# @Last Modified time: 2020-05-10 12:06:39
+# @Last Modified time: 2020-05-10 13:33:06
 import tqdm
 import torch
 import logging
@@ -14,17 +14,17 @@ logger = logging.getLogger('main.eval')
 
 
 def performance(ground_truth, prediction):
-    fpr, tpr, thresholds = metrics.roc_curve(ground_truth.detach().numpy(),
-                                             prediction.detach().numpy())
+    fpr, tpr, thresholds = metrics.roc_curve(ground_truth.detach().cpu().numpy(),
+                                             prediction.detach().cpu().numpy())
     auc = metrics.auc(fpr, tpr)
 
-    f1 = metrics.f1_score(ground_truth.detach().numpy(),
-                          torch.round(prediction).detach().numpy())
-    recall = metrics.recall_score(ground_truth.detach().numpy(),
-                                  torch.round(prediction).detach().numpy())
+    f1 = metrics.f1_score(ground_truth.detach().cpu().numpy(),
+                          torch.round(prediction).detach().cpu().numpy())
+    recall = metrics.recall_score(ground_truth.detach().cpu().numpy(),
+                                  torch.round(prediction).detach().cpu().numpy())
     precision = metrics.precision_score(
-        ground_truth.detach().numpy(),
-        torch.round(prediction).detach().numpy())
+        ground_truth.detach().cpu().numpy(),
+        torch.round(prediction).detach().cpu().numpy())
     logger.info('auc: ' + str(auc) + ' f1: ' + str(f1) + ' recall: ' +
                 str(recall) + ' precision: ' + str(precision))
     print('auc: ' + str(auc) + ' f1: ' + str(f1) + ' recall: ' + str(recall) +
@@ -32,22 +32,23 @@ def performance(ground_truth, prediction):
 
 
 class lossFunc(nn.Module):
-    def __init__(self, num_of_questions, max_step):
+    def __init__(self, num_of_questions, max_step, device):
         super(lossFunc, self).__init__()
         self.crossEntropy = nn.BCELoss()
         self.num_of_questions = num_of_questions
         self.max_step = max_step
+        self.device = device
 
     def forward(self, pred, batch):
         loss = 0
-        prediction = torch.tensor([])
-        ground_truth = torch.tensor([])
+        prediction = torch.tensor([], device=self.device)
+        ground_truth = torch.tensor([], device=self.device)
         for student in range(pred.shape[0]):
             delta = batch[student][:, 0:self.num_of_questions] + batch[
                 student][:, self.num_of_questions:]
             temp = pred[student][:self.max_step - 1].mm(delta[1:].t())
             index = torch.tensor([[i for i in range(self.max_step - 1)]],
-                                 dtype=torch.long)
+                                 dtype=torch.long, device=self.device)
             p = temp.gather(0, index)[0]
             a = (((batch[student][:, 0:self.num_of_questions] -
                    batch[student][:, self.num_of_questions:]).sum(1) + 1) //
@@ -66,7 +67,7 @@ class lossFunc(nn.Module):
 def train_epoch(model, trainLoader, optimizer, loss_func, device):
     model.to(device)
     for batch in tqdm.tqdm(trainLoader, desc='Training:    ', mininterval=2):
-        batch.to(device)
+        batch = batch.to(device)
         pred = model(batch)
         loss, prediction, ground_truth = loss_func(pred, batch)
         optimizer.zero_grad()
@@ -77,10 +78,10 @@ def train_epoch(model, trainLoader, optimizer, loss_func, device):
 
 def test_epoch(model, testLoader, loss_func, device):
     model.to(device)
-    ground_truth = torch.Tensor([])
-    prediction = torch.Tensor([])
+    ground_truth = torch.tensor([], device=device)
+    prediction = torch.tensor([], device=device)
     for batch in tqdm.tqdm(testLoader, desc='Testing:     ', mininterval=2):
-        batch.to(device)
+        batch = batch.to(device)
         pred = model(batch)
         loss, p, a = loss_func(pred, batch)
         prediction = torch.cat([prediction, p])
