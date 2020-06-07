@@ -22,8 +22,8 @@ class RNNModel(nn.Module):
         self.sig = nn.Sigmoid()
         self.device = device
 
-    def forward(self, x):
-        h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim, device=self.device)
-        out, hn = self.rnn(x, h0)
-        res = self.sig(self.fc(out))
+    def forward(self, x):  # shape of input: [batch_size, length, questions * 2]
+        h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim, device=self.device)  # shape: [num_layers * num_directions, batch_size, hidden_size]
+        out, hn = self.rnn(x, h0)  # shape of out: [batch_size, length, hidden_size]
+        res = self.sig(self.fc(out))  # shape of res: [batch_size, length, question]
         return res
