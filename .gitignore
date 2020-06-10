@@ -140,4 +140,4 @@ cython_debug/
 # others
 .vscode/
 .DS_Store
-.log/*
+log/*

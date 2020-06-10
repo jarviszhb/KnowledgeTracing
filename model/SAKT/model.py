@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from SAKT.model.attention import Encoder
-from SAKT.model.embedding import Embedding
+from model.SAKT.attention import Encoder
+from model.SAKT.embedding import Embedding
 
 class SAKTModel(nn.Module):
     def __init__(self, h, length, d_model, n_question, dropout):

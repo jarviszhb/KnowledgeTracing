@@ -5,12 +5,12 @@
 # @Last Modified time: 2020-05-10 11:47:28
 import torch
 import torch.utils.data as Data
-from SAKT.data.readdata import DataReader
+from data.readdata import DataReader
 
 
 def getDataLoader(batch_size, num_of_questions, max_step):
-    handle = DataReader('SAKT/dataset/assistments/builder_train.csv',
-                        'SAKT/dataset/assistments/builder_test.csv', max_step,
+    handle = DataReader('dataset/assist2009/builder_train.csv',
+                        'dataset/assist2009/builder_test.csv', max_step,
                         num_of_questions)
     dtrain = torch.tensor(handle.getTrainData().astype(float).tolist(),
                           dtype=torch.float32)

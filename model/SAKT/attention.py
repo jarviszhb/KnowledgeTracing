@@ -55,8 +55,8 @@ class MultiHeadedAttention(nn.Module):
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
         if mask is not None:
             scores = scores.masked_fill(mask == 0, -1e9)
-        # if causality:
-        #     scores = torch.tril(scores, diagonal=0, out=None)
+        if causality:
+            scores = torch.tril(scores, diagonal=0, out=None)
         p_attn = self.softmax(scores)
         if dropout is not None:
             p_attn = dropout(p_attn)

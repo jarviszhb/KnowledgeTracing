@@ -5,10 +5,10 @@
 # @Last Modified time: 2020-05-10 13:20:09
 """
 Usage:
-    run.py [options]
+    run.py (rnn|sakt) --hidden=<h> [options]
 
 Options:
-    --step=<int>                        max step [default: 50]
+    --length=<int>                      max length of question sequence [default: 50]
     --questions=<int>                   num of question [default: 124]
     --lr=<float>                        learning rate [default: 0.001]
     --bs=<int>                          batch size [default: 64]
@@ -16,9 +16,10 @@ Options:
     --epochs=<int>                      number of epochs [default: 10]
     --cuda=<int>                        use GPU id [default: 0]
     --hidden=<int>                      dimention of hidden state [default: 128]
-    --layers=<int>                      layers of transformer [default: 1]
-    --h=<int>                           head number of transformer [default: 8]
+    --layers=<int>                      layers of rnn or transformer [default: 1]
+    --heads=<int>                       head number of transformer [default: 8]
     --dropout=<float>                   dropout rate [default: 0.1]
+    --model=<string>                    model type
 """
 
 import os
@@ -31,12 +32,9 @@ import numpy as np
 
 from datetime import datetime
 from docopt import docopt
-# from DKT.model.RNNModel import RNNModel
-# from DKT.data.dataloader import getDataLoader
-# from DKT.evaluation import eval
-from SAKT.model.model import SAKTModel
-from SAKT.data.dataloader import getDataLoader
-from SAKT.evaluation import eval
+from data.dataloader import getDataLoader
+from evaluation import eval
+
 
 def setup_seed(seed=0):
     random.seed(seed)
@@ -49,19 +47,8 @@ def setup_seed(seed=0):
 
 def main():
 
-    logger = logging.getLogger('main')
-    logger.setLevel(level=logging.DEBUG)
-    date = datetime.now()
-    handler = logging.FileHandler(
-        f'SAKT/.log/{date.year}_{date.month}_{date.day}_result.log')
-    handler.setLevel(logging.INFO)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
     args = docopt(__doc__)
-    step = int(args['--step'])
+    length = int(args['--length'])
     questions = int(args['--questions'])
     lr = float(args['--lr'])
     bs = int(args['--bs'])
@@ -70,8 +57,23 @@ def main():
     cuda = args['--cuda']
     hidden = int(args['--hidden'])
     layers = int(args['--layers'])
-    h = int(args['--h'])
+    heads = int(args['--heads'])
     dropout = float(args['--dropout'])
+    if args['rnn']:
+        model_type = 'RNN'
+    elif args['sakt']:
+        model_type = 'SAKT'
+
+    logger = logging.getLogger('main')
+    logger.setLevel(level=logging.DEBUG)
+    date = datetime.now()
+    handler = logging.FileHandler(
+        f'log/{date.year}_{date.month}_{date.day}_{model_type}_result.log')
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     logger.info(list(args.items()))
 
@@ -83,18 +85,24 @@ def main():
     else:
         device = torch.device('cpu')
 
-    trainLoader, testLoader = getDataLoader(bs, questions, step)
-    # rnn = RNNModel(questions * 2, hidden, layers, questions, device)
-    model = SAKTModel(h, step, hidden, questions, dropout)
+    trainLoader, testLoade = getDataLoader(bs, questions, length)
+    
+    if model_type == 'RNN':
+        from model.DKT.RNNModel import RNNModel
+        model = RNNModel(questions * 2, hidden, layers, questions, device)
+    elif model_type == 'SAKT':
+        from model.SAKT.model import SAKTModel
+        model = SAKTModel(heads, length, hidden, questions, dropout)
+
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    loss_func = eval.lossFunc(questions, step, device)
+    loss_func = eval.lossFunc(questions, length, device)
 
     for epoch in range(epochs):
         print('epoch: ' + str(epoch))
         model, optimizer = eval.train_epoch(model, trainLoader, optimizer,
                                           loss_func, device)
         logger.info(f'epoch {epoch}')
-        eval.test_epoch(model, testLoader, loss_func, device)
+        eval.test_epoch(model, testLoade, loss_func, device)
 
 
 if __name__ == '__main__':
