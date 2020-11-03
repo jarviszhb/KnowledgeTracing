@@ -92,7 +92,7 @@ def main():
         model = RNNModel(questions * 2, hidden, layers, questions, device)
     elif model_type == 'SAKT':
         from model.SAKT.model import SAKTModel
-        model = SAKTModel(heads, length, hidden, questions, dropout)
+        model = SAKTModel(heads, length, hidden, questions, dropout, device)
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_func = eval.lossFunc(questions, length, device)

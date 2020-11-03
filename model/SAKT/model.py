@@ -5,9 +5,9 @@ from model.SAKT.attention import Encoder
 from model.SAKT.embedding import Embedding
 
 class SAKTModel(nn.Module):
-    def __init__(self, h, length, d_model, n_question, dropout):
+    def __init__(self, h, length, d_model, n_question, dropout, device):
         super(SAKTModel, self).__init__()
-        self.embedding = Embedding(n_question, length, d_model)
+        self.embedding = Embedding(n_question, length, d_model, device)
         self.encoder = Encoder(h, length, d_model, dropout)
         self.w = nn.Linear(d_model, n_question)
         self.sig = nn.Sigmoid()
